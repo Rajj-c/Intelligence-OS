@@ -192,7 +192,7 @@ export default function AppShell() {
           <div className="flex items-center gap-1">
             <span>Built by</span>
             <a 
-              href="https://rajexwar.tech" 
+              href="https://rajeswar.tech" 
               target="_blank" 
               rel="noopener noreferrer"
               className="text-primary hover:text-cyan font-bold transition-all duration-300 hover:scale-105"
@@ -203,12 +203,12 @@ export default function AppShell() {
           <div className="flex items-center gap-1">
             <span className="w-1 h-1 rounded-full bg-cyan animate-pulse mr-1" />
             <a 
-              href="https://rajexwar.tech" 
+              href="https://rajeswar.tech" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="hover:text-primary transition-all duration-300 flex items-center gap-0.5 hover:translate-x-0.5"
             >
-              Visit <span className="font-semibold underline decoration-cyan/30 hover:decoration-primary/60">rajexwar.tech</span> →
+              Visit <span className="font-semibold underline decoration-cyan/30 hover:decoration-primary/60">rajeswar.tech</span> →
             </a>
           </div>
         </footer>
