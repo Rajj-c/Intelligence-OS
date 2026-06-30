@@ -13,7 +13,6 @@ import {
   Brain,
   Database,
   Download,
-  Trophy,
   LogOut,
   Loader2,
   Menu,
@@ -36,9 +35,7 @@ const NAV = [
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
-const HACKATHON_NAV = [
-  { to: "/hackathon", label: "Hackathon Demo", icon: Trophy },
-];
+
 
 interface SidebarContentProps {
   onClose?: () => void;
@@ -74,33 +71,7 @@ function SidebarContent({ onClose }: SidebarContentProps) {
             </Link>
           );
         })}
-        <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-widest text-amber-500/70 flex items-center gap-1.5">
-          <Trophy size={10} className="text-amber-500/70" />
-          India Runs Challenge
-        </div>
-        {HACKATHON_NAV.map((n) => {
-          const active = loc.pathname.startsWith(n.to);
-          return (
-            <Link
-              key={n.to}
-              to={n.to}
-              onClick={onClose}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                active
-                  ? "bg-amber-500/15 text-foreground border border-amber-500/30"
-                  : "text-amber-500/70 hover:text-amber-400 hover:bg-amber-500/10"
-              }`}
-            >
-              <n.icon size={16} className={active ? "text-amber-400" : "text-amber-500/70"} />
-              <span>{n.label}</span>
-              {!active && (
-                <span className="ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
-                  NEW
-                </span>
-              )}
-            </Link>
-          );
-        })}
+
       </nav>
 
       <div className="p-3 border-t border-border/40">
