@@ -213,12 +213,35 @@ export function CTASection() {
           </div>
         </div>
       </div>
-      <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-border/40 flex flex-wrap justify-between gap-4 text-xs text-muted-foreground">
-        <div>© 2026 TalentOS · An AI Talent Intelligence Platform</div>
-        <div className="flex gap-6">
-          <a href="#" className="hover:text-foreground">Security</a>
-          <a href="#" className="hover:text-foreground">Privacy</a>
-          <a href="#" className="hover:text-foreground">Terms</a>
+      <footer className="max-w-6xl mx-auto mt-20 pt-8 border-t border-border/40 flex flex-wrap justify-between items-center gap-4 text-xs text-muted-foreground select-none">
+        <div className="flex items-center gap-4">
+          <div>© 2026 TalentOS · An AI Talent Intelligence Platform</div>
+          <div className="hidden sm:flex items-center gap-1.5 font-medium border-l border-border/40 pl-4">
+            <span>Built with ❤️ by</span>
+            <a 
+              href="https://rajeswar.tech" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:text-cyan font-bold transition-all duration-300 hover:scale-105"
+            >
+              Raj
+            </a>
+          </div>
+        </div>
+        <div className="flex items-center gap-6">
+          <a 
+            href="https://rajeswar.tech" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-primary transition-all duration-300 flex items-center gap-1 hover:translate-x-0.5"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+            Visit <span className="font-semibold underline decoration-cyan/30 hover:decoration-primary/60">rajeswar.tech</span>
+          </a>
+          <div className="flex gap-4 border-l border-border/40 pl-6">
+            <a href="#" className="hover:text-foreground">Security</a>
+            <a href="#" className="hover:text-foreground">Privacy</a>
+          </div>
         </div>
       </footer>
     </section>
