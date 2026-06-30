@@ -188,6 +188,30 @@ export default function AppShell() {
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
+        <footer className="h-10 border-t border-border/40 px-6 flex items-center justify-between bg-surface/20 backdrop-blur-xl text-[10px] text-muted-foreground select-none">
+          <div className="flex items-center gap-1">
+            <span>Built by</span>
+            <a 
+              href="https://rajexwar.tech" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:text-cyan font-bold transition-all duration-300 hover:scale-105"
+            >
+              Raj
+            </a>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-1 h-1 rounded-full bg-cyan animate-pulse mr-1" />
+            <a 
+              href="https://rajexwar.tech" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="hover:text-primary transition-all duration-300 flex items-center gap-0.5 hover:translate-x-0.5"
+            >
+              Visit <span className="font-semibold underline decoration-cyan/30 hover:decoration-primary/60">rajexwar.tech</span> →
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
