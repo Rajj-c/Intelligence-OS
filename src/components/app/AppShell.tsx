@@ -16,10 +16,12 @@ import {
   Trophy,
   LogOut,
   Loader2,
+  Menu,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const NAV = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -38,12 +40,87 @@ const HACKATHON_NAV = [
   { to: "/hackathon", label: "Hackathon Demo", icon: Trophy },
 ];
 
+interface SidebarContentProps {
+  onClose?: () => void;
+}
+
+function SidebarContent({ onClose }: SidebarContentProps) {
+  const loc = useLocation();
+  return (
+    <div className="flex flex-col h-full bg-sidebar/80 backdrop-blur-xl">
+      <Link to="/" className="flex items-center gap-2 px-6 h-16 border-b border-border/40" onClick={onClose}>
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
+          <Brain size={18} className="text-white" />
+        </div>
+        <span className="font-semibold tracking-tight text-white">TalentOS</span>
+      </Link>
+      <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
+        <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-muted-foreground">Workspace</div>
+        {NAV.map((n) => {
+          const active = loc.pathname === n.to || (n.to !== "/dashboard" && loc.pathname.startsWith(n.to));
+          return (
+            <Link
+              key={n.to}
+              to={n.to}
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                active
+                  ? "bg-primary/15 text-foreground border border-primary/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+              }`}
+            >
+              <n.icon size={16} className={active ? "text-primary" : ""} />
+              <span>{n.label}</span>
+            </Link>
+          );
+        })}
+        <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-widest text-amber-500/70 flex items-center gap-1.5">
+          <Trophy size={10} className="text-amber-500/70" />
+          India Runs Challenge
+        </div>
+        {HACKATHON_NAV.map((n) => {
+          const active = loc.pathname.startsWith(n.to);
+          return (
+            <Link
+              key={n.to}
+              to={n.to}
+              onClick={onClose}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                active
+                  ? "bg-amber-500/15 text-foreground border border-amber-500/30"
+                  : "text-amber-500/70 hover:text-amber-400 hover:bg-amber-500/10"
+              }`}
+            >
+              <n.icon size={16} className={active ? "text-amber-400" : "text-amber-500/70"} />
+              <span>{n.label}</span>
+              {!active && (
+                <span className="ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
+                  NEW
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="p-3 border-t border-border/40">
+        <div className="glass-panel rounded-xl p-3 text-xs">
+          <div className="flex items-center gap-2 text-emerald">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald pulse-ring" />
+            <span className="font-medium text-emerald">AI Engine</span>
+          </div>
+          <div className="mt-1 text-muted-foreground">All models healthy · v4.2</div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AppShell() {
-  const loc = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -91,96 +168,47 @@ export default function AppShell() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
-      <aside className="w-64 shrink-0 border-r border-border/40 bg-sidebar/80 backdrop-blur-xl flex flex-col">
-        <Link to="/" className="flex items-center gap-2 px-6 h-16 border-b border-border/40">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-cyan flex items-center justify-center">
-            <Brain size={18} className="text-white" />
-          </div>
-          <span className="font-semibold tracking-tight">TalentOS</span>
-        </Link>
-        <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          <div className="px-3 py-2 text-[10px] uppercase tracking-widest text-muted-foreground">Workspace</div>
-          {NAV.map((n) => {
-            const active = loc.pathname === n.to || (n.to !== "/dashboard" && loc.pathname.startsWith(n.to));
-            return (
-              <Link
-                key={n.to}
-                to={n.to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                  active
-                    ? "bg-primary/15 text-foreground border border-primary/30 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-                    : "text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-                }`}
-              >
-                <n.icon size={16} className={active ? "text-primary" : ""} />
-                <span>{n.label}</span>
-              </Link>
-            );
-          })}
-          <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-widest text-amber-500/70 flex items-center gap-1.5">
-            <Trophy size={10} className="text-amber-500/70" />
-            India Runs Challenge
-          </div>
-          {HACKATHON_NAV.map((n) => {
-            const active = loc.pathname.startsWith(n.to);
-            return (
-              <Link
-                key={n.to}
-                to={n.to}
-                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
-                  active
-                    ? "bg-amber-500/15 text-foreground border border-amber-500/30"
-                    : "text-amber-500/70 hover:text-amber-400 hover:bg-amber-500/10"
-                }`}
-              >
-                <n.icon size={16} className={active ? "text-amber-400" : "text-amber-500/70"} />
-                <span>{n.label}</span>
-                {!active && (
-                  <span className="ml-auto text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400">
-                    NEW
-                  </span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="p-3 border-t border-border/40">
-          <div className="glass-panel rounded-xl p-3 text-xs">
-            <div className="flex items-center gap-2 text-emerald">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald pulse-ring" />
-              <span className="font-medium">AI Engine</span>
-            </div>
-            <div className="mt-1 text-muted-foreground">All models healthy · v4.2</div>
-          </div>
-        </div>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 shrink-0 border-r border-border/40 bg-sidebar/80 backdrop-blur-xl flex-col">
+        <SidebarContent />
       </aside>
 
       {/* Main column */}
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 px-6 border-b border-border/40 bg-background/60 backdrop-blur-xl flex items-center gap-4 sticky top-0 z-30">
+        <header className="h-16 px-4 lg:px-6 border-b border-border/40 bg-background/60 backdrop-blur-xl flex items-center gap-3 sticky top-0 z-30">
+          {/* Mobile hamburger menu toggle */}
+          <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <SheetTrigger asChild>
+              <button className="lg:hidden p-2 rounded-lg border border-border/60 bg-surface/60 text-muted-foreground hover:text-foreground cursor-pointer shrink-0">
+                <Menu size={16} />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-64 bg-sidebar border-r border-border/40">
+              <SidebarContent onClose={() => setIsOpen(false)} />
+            </SheetContent>
+          </Sheet>
+
           <div className="flex-1 max-w-xl">
             <div className="flex items-center gap-2 px-3 h-9 rounded-lg bg-surface/60 border border-border/60 text-sm text-muted-foreground">
               <Search size={14} />
               <input
                 placeholder="Search candidates, jobs, skills..."
-                className="bg-transparent outline-none flex-1 text-foreground placeholder:text-muted-foreground"
+                className="bg-transparent outline-none flex-1 text-foreground placeholder:text-muted-foreground text-xs sm:text-sm"
               />
-              <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-2 border border-border/60">⌘K</kbd>
+              <kbd className="hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-2 border border-border/60">⌘K</kbd>
             </div>
           </div>
-          <button className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-foreground relative">
+          <button className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-foreground relative shrink-0">
             <Bell size={16} />
             <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-destructive" />
           </button>
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-cyan grid place-items-center text-[11px] font-semibold text-white">
+          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-cyan grid place-items-center text-[11px] font-semibold text-white shrink-0">
             {userInitials}
           </div>
           <button
             onClick={handleSignOut}
             title="Sign Out"
-            className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+            className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer shrink-0"
           >
             <LogOut size={16} />
           </button>
