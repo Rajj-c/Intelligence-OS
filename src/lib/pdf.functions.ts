@@ -3,7 +3,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { extractStructured } from "./ranking/ai-gateway.server";
-import { PDFParse } from "pdf-parse";
+// @ts-ignore
+import pdf from "pdf-parse-fork";
 
 // Output shape Gemini must fill in from resume text
 interface ParsedResume {
@@ -77,11 +78,9 @@ export const ingestResumePdfs = createServerFn({ method: "POST" })
         // Decode base64 to buffer
         const buffer = Buffer.from(resume.base64, "base64");
         
-        // Extract text using PDFParse class
-        const parser = new PDFParse({ data: buffer });
-        const pdfData = await parser.getText();
+        // Extract text using pure-JS pdf-parse-fork
+        const pdfData = await pdf(buffer);
         const text = pdfData.text;
-        await parser.destroy();
 
         if (!text || text.trim().length < 50) {
           results.push({ filename: resume.filename, name: "", status: "error", error: "Could not extract enough text from PDF" });
