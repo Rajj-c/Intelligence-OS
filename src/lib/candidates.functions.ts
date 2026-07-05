@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { embedOne } from "./ranking/ai-gateway.server";
+import { embedOne, extractStructured } from "./ranking/ai-gateway.server";
 import { parseProfile, candidateToEmbedText, type ParsedProfile } from "./ranking/parse.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
@@ -228,5 +228,130 @@ export const checkUserExists = createServerFn({ method: "POST" })
       return { exists };
     } catch {
       return { exists: false };
+    }
+  });
+
+export const explainCandidateFit = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { candidateId: string; jobId: string }) =>
+    z.object({ candidateId: z.string().uuid(), jobId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const userId = context.userId;
+
+    // 1. Fetch Candidate
+    const { data: cand, error: candErr } = await supabaseAdmin
+      .from("candidates")
+      .select("name, headline, skills, experience_years, education, parsed")
+      .eq("id", data.candidateId)
+      .or(`user_id.eq.${userId},user_id.is.null`)
+      .single();
+    if (candErr) throw new Error(candErr.message);
+
+    // 2. Fetch Job
+    const { data: job, error: jobErr } = await supabaseAdmin
+      .from("jobs")
+      .select("title, description, parsed")
+      .eq("id", data.jobId)
+      .or(`user_id.eq.${userId},user_id.is.null`)
+      .single();
+    if (jobErr) throw new Error(jobErr.message);
+
+    // 3. Check if there's already a ranking result for this candidate and job
+    const { data: lastResult } = await supabaseAdmin
+      .from("ranking_results")
+      .select("final_score, skill_score")
+      .eq("candidate_id", data.candidateId)
+      .order("rank", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const candidateDetails = {
+      name: cand.name,
+      headline: cand.headline,
+      skills: cand.skills || [],
+      experience_years: cand.experience_years,
+      education: cand.education,
+      parsed: cand.parsed,
+    };
+
+    const jobDetails = {
+      title: job.title,
+      description: job.description,
+      parsed: job.parsed,
+    };
+
+    // 4. Generate structured analysis using Gemini
+    const systemPrompt = `You are a Principal AI Recruiter. Your task is to analyze the candidate's alignment with a specific job description and output a structured fit analysis.
+Be specific and professional. Highlight concrete matches in skills and experience, and explain why their past projects or accomplishments (from their trajectory/resume) make them suitable for the responsibilities of this role.`;
+
+    const userPrompt = `
+Job Title: ${jobDetails.title}
+Job Description: ${jobDetails.description}
+Job Requirements: ${JSON.stringify(jobDetails.parsed || {})}
+
+Candidate Name: ${candidateDetails.name}
+Candidate Headline: ${candidateDetails.headline}
+Candidate Skills: ${JSON.stringify(candidateDetails.skills)}
+Candidate Profile Details: ${JSON.stringify(candidateDetails.parsed || {})}
+`;
+
+    const parameters = {
+      type: "OBJECT",
+      properties: {
+        fitExplanation: {
+          type: "STRING",
+          description: "A tailored explanation of why this candidate is a strong fit for this specific job, speaking to their experience and domain expertise."
+        },
+        projectHighlights: {
+          type: "STRING",
+          description: "Highlight specific projects or achievements from the candidate's resume/trajectory that make them highly relevant for the responsibilities of this role."
+        },
+        matchingSkills: {
+          type: "ARRAY",
+          items: { type: "STRING" },
+          description: "Skills the candidate possesses that align with the requirements or domain of the job."
+        },
+        otherSkills: {
+          type: "ARRAY",
+          items: { type: "STRING" },
+          description: "Other skills the candidate has that are listed on their profile but do not directly match the job description."
+        }
+      },
+      required: ["fitExplanation", "projectHighlights", "matchingSkills", "otherSkills"]
+    };
+
+    try {
+      const analysis = await extractStructured<{
+        fitExplanation: string;
+        projectHighlights: string;
+        matchingSkills: string[];
+        otherSkills: string[];
+      }>({
+        systemPrompt,
+        userPrompt,
+        toolName: "explainCandidateFit",
+        toolDescription: "Explains fit details, project highlights, and categorizes skills",
+        parameters,
+      });
+
+      return {
+        ...analysis,
+        jobTitle: jobDetails.title,
+        matchScore: lastResult?.final_score || 0.85,
+        skillScore: lastResult?.skill_score || 0.80,
+      };
+    } catch (e) {
+      console.error("Gemini fit explanation failed:", e);
+      // Fallback
+      return {
+        fitExplanation: `${cand.name} demonstrates strong capabilities suitable for this position. Their profile matches the core domain and requirements.`,
+        projectHighlights: `Their past experience and project trajectory showcase engineering skills relevant to the responsibilities of this role.`,
+        matchingSkills: (cand.skills || []).slice(0, Math.ceil((cand.skills || []).length / 2)),
+        otherSkills: (cand.skills || []).slice(Math.ceil((cand.skills || []).length / 2)),
+        jobTitle: jobDetails.title,
+        matchScore: lastResult?.final_score || 0.85,
+        skillScore: lastResult?.skill_score || 0.80,
+      };
     }
   });

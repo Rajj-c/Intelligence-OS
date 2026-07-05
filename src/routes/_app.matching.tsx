@@ -250,6 +250,7 @@ function MatchingPage() {
                     <Link
                       to="/candidates/$id"
                       params={{ id: c.candidate_id }}
+                      search={{ jobId: selectedJobId }}
                       className="flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-2xl border border-border/60 bg-surface/40 hover:bg-surface-2/45 hover:border-primary/40 transition-all group relative overflow-hidden"
                     >
                       {hasGem && (

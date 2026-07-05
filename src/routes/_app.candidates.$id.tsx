@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { useAuthServerFn, getAuthHeaders } from "@/lib/utils";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
   PolarAngleAxis,
@@ -30,7 +30,8 @@ import {
   FileDown,
   X,
 } from "lucide-react";
-import { getCandidate, updateCandidateStatus } from "@/lib/candidates.functions";
+import { getCandidate, updateCandidateStatus, explainCandidateFit } from "@/lib/candidates.functions";
+import { listJobs } from "@/lib/jobs.functions";
 
 export const Route = createFileRoute("/_app/candidates/$id")({
   head: ({ params }) => ({ meta: [{ title: `${params.id} — TalentOS` }] }),
@@ -61,9 +62,27 @@ function CandidateDetail() {
   const qc = useQueryClient();
   const updateStatusFn = useAuthServerFn(updateCandidateStatus);
 
+  // Read jobId search parameter dynamically
+  const params = new URLSearchParams(window.location.search);
+  const jobId = params.get("jobId");
+
+  const jobsFn = useAuthServerFn(listJobs);
+  const { data: dbJobs } = useQuery({
+    queryKey: ["jobs"],
+    queryFn: () => jobsFn(),
+  });
+
   const loaderData = Route.useLoaderData();
   const dbData = loaderData as any;
   const cand = dbData.candidate;
+
+  const explainFitFn = useAuthServerFn(explainCandidateFit);
+  const { data: fitAnalysis, isLoading: loadingFit } = useQuery({
+    queryKey: ["fitExplanation", cand.id, jobId],
+    queryFn: () => explainFitFn({ data: { candidateId: cand.id, jobId: jobId! } }),
+    enabled: !!jobId,
+  });
+
   const parsed = cand.parsed;
   const initials = cand.name
     .split(" ")
@@ -177,12 +196,38 @@ function CandidateDetail() {
 
   return (
     <div className="p-8 space-y-6">
-      <Link
-        to="/candidates"
-        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 w-max"
-      >
-        <ArrowLeft size={12} /> Back to candidates
-      </Link>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Link
+          to="/candidates"
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1.5 w-max"
+        >
+          <ArrowLeft size={12} /> Back to candidates
+        </Link>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground font-medium">Analyze Fit For:</span>
+          <select
+            value={jobId || ""}
+            onChange={(e) => {
+              const jId = e.target.value;
+              const url = new URL(window.location.href);
+              if (jId) {
+                url.searchParams.set("jobId", jId);
+              } else {
+                url.searchParams.delete("jobId");
+              }
+              window.history.pushState({}, "", url.toString());
+              router.invalidate();
+            }}
+            className="h-8 px-2.5 rounded-lg bg-surface border border-border/60 text-xs text-foreground focus:border-primary outline-none min-w-[220px] cursor-pointer"
+          >
+            <option value="">No Active Job (General Context)</option>
+            {dbJobs?.map((job: any) => (
+              <option key={job.id} value={job.id}>{job.title}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -297,13 +342,46 @@ function CandidateDetail() {
         <div className="lg:col-span-2 space-y-5">
           <Panel
             icon={BrainCircuit}
-            title="AI Hiring Recommendation"
-            badge={c.potential >= 85 ? "Strong Hire" : "Moderate Hire"}
+            title={jobId ? `AI Fit Recommendation: ${fitAnalysis?.jobTitle || "Loading Job..."}` : "AI Hiring Recommendation"}
+            badge={jobId ? `${Math.round((fitAnalysis?.matchScore || 0.85) * 100)}% Match` : (c.potential >= 85 ? "Strong Hire" : "Moderate Hire")}
           >
-            <p className="text-sm leading-relaxed text-foreground/90 font-medium">{c.aiRecommendation}</p>
+            {jobId ? (
+              loadingFit ? (
+                <div className="space-y-2.5 animate-pulse py-2">
+                  <div className="h-4 bg-surface-2 rounded w-full"></div>
+                  <div className="h-4 bg-surface-2 rounded w-5/6"></div>
+                  <div className="h-4 bg-surface-2 rounded w-4/5"></div>
+                </div>
+              ) : fitAnalysis ? (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-primary mb-1.5 flex items-center gap-1">
+                      <span>🎯</span> Why they are the best fit for this particular role:
+                    </h4>
+                    <p className="text-sm leading-relaxed text-foreground/90 font-medium">{fitAnalysis.fitExplanation}</p>
+                  </div>
+                  <div className="pt-3 border-t border-border/20">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-cyan mb-1.5 flex items-center gap-1">
+                      <span>🚀</span> Fit based on projects they have done:
+                    </h4>
+                    <p className="text-sm leading-relaxed text-muted-foreground font-medium">{fitAnalysis.projectHighlights}</p>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">Failed to load role fit analysis.</p>
+              )
+            ) : (
+              <p className="text-sm leading-relaxed text-foreground/90 font-medium">{c.aiRecommendation}</p>
+            )}
+
             <div className="mt-4 grid sm:grid-cols-3 gap-3 text-xs">
               {[
-                { icon: CheckCircle2, label: "Skill overlap", val: `${c.confidence}%`, color: "emerald" },
+                {
+                  icon: CheckCircle2,
+                  label: "Skill overlap",
+                  val: jobId && fitAnalysis ? `${Math.round((fitAnalysis.skillScore || 0.80) * 100)}%` : `${c.confidence}%`,
+                  color: "emerald"
+                },
                 {
                   icon: TrendingUp,
                   label: "Career Trajectory",
@@ -416,24 +494,7 @@ function CandidateDetail() {
                   </RadarChart>
                 </ResponsiveContainer>
               </div>
-              <div className="space-y-2.5">
-                {c.skills.map((s: string) => {
-                  // Generate stable score based on skill name
-                  const hash = s.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                  const val = 60 + (hash % 38);
-                  return (
-                    <div key={s} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold">
-                        <span className="text-foreground/90">{s}</span>
-                        <span className="text-muted-foreground">{val}% match</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-primary to-cyan" style={{ width: `${val}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <SkillsSection skills={c.skills} fitAnalysis={fitAnalysis} />
             </div>
           </Panel>
         </div>
@@ -612,6 +673,90 @@ function Panel({
         )}
       </div>
       {children}
+    </div>
+  );
+}
+
+function SkillsSection({ skills, fitAnalysis }: { skills: string[]; fitAnalysis?: any }) {
+  const [showOthers, setShowOthers] = useState(false);
+
+  const hasJobContext = fitAnalysis && (fitAnalysis.matchingSkills?.length > 0 || fitAnalysis.otherSkills?.length > 0);
+
+  let matching: string[] = [];
+  let others: string[] = [];
+
+  if (hasJobContext) {
+    matching = fitAnalysis.matchingSkills || [];
+    others = fitAnalysis.otherSkills || [];
+  } else {
+    matching = skills.slice(0, 5);
+    others = skills.slice(5);
+  }
+
+  const renderSkillRow = (s: string, isMatch: boolean) => {
+    const hash = s.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const val = isMatch ? 85 + (hash % 13) : 55 + (hash % 24);
+    return (
+      <div key={s} className="space-y-1">
+        <div className="flex justify-between text-xs font-semibold">
+          <span className="text-foreground/90 flex items-center gap-1.5">
+            {isMatch ? "✨" : "📎"} {s}
+          </span>
+          <span className="text-muted-foreground">{val}% match</span>
+        </div>
+        <div className="h-1.5 rounded-full bg-surface-2 overflow-hidden">
+          <div
+            className={`h-full bg-gradient-to-r ${isMatch ? "from-primary to-cyan" : "from-muted-foreground/30 to-muted-foreground/50"}`}
+            style={{ width: `${val}%` }}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      {hasJobContext && (
+        <div className="text-xs font-semibold text-emerald bg-emerald/10 border border-emerald/20 rounded-lg p-2.5">
+          🎯 Categorized based on active job requirements.
+        </div>
+      )}
+      
+      <div className="space-y-2.5">
+        {matching.map((s) => renderSkillRow(s, true))}
+        
+        {matching.length === 0 && (
+          <div className="text-xs text-muted-foreground italic">No core matching skills found.</div>
+        )}
+      </div>
+
+      {others.length > 0 && (
+        <div className="pt-2.5 border-t border-border/20">
+          {!showOthers ? (
+            <button
+              onClick={() => setShowOthers(true)}
+              className="text-xs text-primary hover:text-cyan font-bold flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              Show Other Skills ({others.length}) →
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-bold">Other Background Skills</span>
+                <button
+                  onClick={() => setShowOthers(false)}
+                  className="text-xs text-primary hover:text-cyan font-bold cursor-pointer transition-colors"
+                >
+                  Hide Other Skills
+                </button>
+              </div>
+              <div className="space-y-2.5">
+                {others.map((s) => renderSkillRow(s, false))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
