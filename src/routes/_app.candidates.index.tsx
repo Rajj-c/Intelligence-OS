@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useAuthServerFn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, Search, SlidersHorizontal, Check, X } from "lucide-react";
+import { Filter, Search, SlidersHorizontal, Check, X, Users, Award, Calendar, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { listCandidates } from "@/lib/candidates.functions";
 
@@ -24,6 +24,7 @@ function CandidatesPage() {
   const [compFilter, setCompFilter] = useState<string>("all"); // "all", "Tier-1", "Tier-2", "Tier-3"
   const [gemsOnly, setGemsOnly] = useState<boolean>(false);
   const [filtersOpen, setFiltersOpen] = useState<boolean>(false);
+  const [selectedStage, setSelectedStage] = useState<string>("all");
 
   // Map DB candidates to candidate cards
   const dbMapped = (dbCandidates ?? []).map((c) => {
@@ -86,8 +87,18 @@ function CandidatesPage() {
 
   const candidatesList = dbMapped;
 
+  const countAll = candidatesList.length;
+  const countShortlisted = candidatesList.filter(c => c.status === "shortlisted" || !c.status).length;
+  const countScreening = candidatesList.filter(c => c.status === "screening").length;
+  const countInterview = candidatesList.filter(c => c.status === "interview").length;
+  const countOffer = candidatesList.filter(c => c.status === "offer").length;
+  const countRejected = candidatesList.filter(c => c.status === "rejected").length;
+
   // Apply filters
   const filtered = candidatesList.filter((c) => {
+    // Stage Filter
+    if (selectedStage !== "all" && (c.status || "shortlisted") !== selectedStage) return false;
+
     const matchesSearch =
       c.name.toLowerCase().includes(q.toLowerCase()) ||
       c.role.toLowerCase().includes(q.toLowerCase()) ||
@@ -115,6 +126,43 @@ function CandidatesPage() {
         <p className="text-sm text-muted-foreground mt-1">
           {candidatesList.length} candidates analyzed · Indian context filters active
         </p>
+      </div>
+
+      {/* Recruitment Pipeline Stage Selector */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+        {[
+          { key: "all", label: "All Candidates", count: countAll, icon: Users, color: "text-muted-foreground" },
+          { key: "shortlisted", label: "Shortlisted", count: countShortlisted, icon: Award, color: "text-amber" },
+          { key: "screening", label: "Screening", count: countScreening, icon: Filter, color: "text-primary" },
+          { key: "interview", label: "Interviewing", count: countInterview, icon: Calendar, color: "text-cyan" },
+          { key: "offer", label: "Offered", count: countOffer, icon: Sparkles, color: "text-emerald" },
+          { key: "rejected", label: "Rejected", count: countRejected, icon: X, color: "text-rose-400" },
+        ].map((stage) => {
+          const Icon = stage.icon;
+          const isActive = selectedStage === stage.key;
+          return (
+            <button
+              key={stage.key}
+              onClick={() => setSelectedStage(stage.key)}
+              className={`glass-panel rounded-2xl p-4 text-left transition-all hover:border-primary/30 relative overflow-hidden cursor-pointer ${
+                isActive 
+                  ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-md shadow-primary/5" 
+                  : "bg-surface/40 hover:bg-surface-2/40 border-border/40"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div className={`w-8 h-8 rounded-lg bg-surface/80 border border-border/60 grid place-items-center ${stage.color}`}>
+                  <Icon size={14} />
+                </div>
+                <span className="text-lg font-display font-semibold text-foreground">{stage.count}</span>
+              </div>
+              <div className="text-xs font-medium text-muted-foreground mt-3">{stage.label}</div>
+              {isActive && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-cyan" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div className="space-y-3">
@@ -316,6 +364,19 @@ function CandidatesPage() {
 
                 {/* Localized badging */}
                 <div className="mt-3.5 flex flex-wrap gap-1.5">
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
+                    c.status === "screening" 
+                      ? "bg-primary/10 border-primary/25 text-primary" 
+                      : c.status === "interview" 
+                        ? "bg-cyan/10 border-cyan/25 text-cyan" 
+                        : c.status === "offer" 
+                          ? "bg-emerald/10 border-emerald/25 text-emerald" 
+                          : c.status === "rejected" 
+                            ? "bg-rose-500/10 border-rose-500/20 text-rose-400" 
+                            : "bg-amber/10 border-amber/25 text-amber"
+                  }`}>
+                    ⚙️ {c.status === "interview" ? "Interviewing" : c.status ? c.status.charAt(0).toUpperCase() + c.status.slice(1) : "Shortlisted"}
+                  </span>
                   {c.is_gem && (
                     <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber/10 text-amber border border-amber/30">
                       💎 {c.gem_label}
