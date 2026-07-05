@@ -1,16 +1,33 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Brain, Github, Linkedin, Twitter, X } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 const VIDEO_URL =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260328_115001_bcdaa3b4-03de-47e7-ad63-ae3e392c32d4.mp4";
 
 export default function HeroLanding() {
+  const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const rafRef = useRef<number | null>(null);
   const fadingOutRef = useRef(false);
   const [showPopup, setShowPopup] = useState(false);
+  const [email, setEmail] = useState("");
+
+  const handleStartSignUp = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setShowPopup(true);
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+    navigate({ to: `/login?email=${encodeURIComponent(email)}&mode=signup` as any });
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -132,19 +149,20 @@ export default function HeroLanding() {
 
         <div className="max-w-xl w-full space-y-4">
           <form
-            onSubmit={(e) => e.preventDefault()}
+            onSubmit={handleStartSignUp}
             className="liquid-glass rounded-full pl-6 pr-2 py-2 flex items-center gap-3"
           >
             <input
               type="email"
               placeholder="work@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="flex-1 bg-transparent outline-none text-white placeholder:text-white/40 text-base"
             />
             <button
-              onClick={() => setShowPopup(true)}
-              type="button"
+              type="submit"
               aria-label="Request access"
-              className="bg-white rounded-full p-3 text-black hover:scale-105 transition-transform"
+              className="bg-white rounded-full p-3 text-black hover:scale-105 transition-transform cursor-pointer"
             >
               <ArrowRight size={20} />
             </button>

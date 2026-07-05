@@ -56,6 +56,19 @@ function LoginPage() {
     });
   }, [navigate]);
 
+  // Pre-fill email and auth mode from URL search parameters if available
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get("email");
+    const modeParam = params.get("mode");
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+    if (modeParam && ["signin", "signup", "forgot"].includes(modeParam)) {
+      setMode(modeParam as AuthMode);
+    }
+  }, []);
+
   // Reset states when mode changes
   useEffect(() => {
     setStep("initial");
