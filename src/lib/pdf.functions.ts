@@ -74,11 +74,12 @@ export const ingestResumePdfs = createServerFn({ method: "POST" })
 
     for (const resume of data.resumes) {
       try {
-        // Decode base64 to buffer
+        // Decode base64 to buffer and convert to raw Uint8Array
         const buffer = Buffer.from(resume.base64, "base64");
+        const uint8Array = new Uint8Array(buffer);
         
         // Extract text using pure-JS unpdf (safe for bundlers/Vercel)
-        const pdfData = await extractText(buffer, { mergePages: true });
+        const pdfData = await extractText(uint8Array, { mergePages: true });
         const text = pdfData.text;
 
         if (!text || text.trim().length < 50) {
