@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ArrowRight, Brain, Github, Linkedin, Twitter, X } from "lucide-react";
+import { ArrowRight, Brain, Github, Instagram, Linkedin, X } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -185,17 +185,20 @@ export default function HeroLanding() {
       {/* Social */}
       <div className="relative z-10 flex justify-center gap-4 pb-12">
         {[
-          { icon: Linkedin, label: "LinkedIn" },
-          { icon: Twitter, label: "Twitter" },
-          { icon: Github, label: "GitHub" },
-        ].map(({ icon: Icon, label }) => (
-          <button
+          { icon: Linkedin, label: "LinkedIn", href: "https://www.linkedin.com/in/rajeswarcharapalli/" },
+          { icon: Instagram, label: "Instagram", href: "https://www.instagram.com/rajeswar_chowdaryy/" },
+          { icon: Github, label: "GitHub", href: "https://github.com/Rajj-c/Intelligence-OS" },
+        ].map(({ icon: Icon, label, href }) => (
+          <a
             key={label}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
             aria-label={label}
-            className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all"
+            className="liquid-glass rounded-full p-4 text-white/80 hover:text-white hover:bg-white/5 transition-all flex items-center justify-center cursor-pointer"
           >
             <Icon size={20} />
-          </button>
+          </a>
         ))}
       </div>
 

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { extractStructured } from "./ranking/ai-gateway.server";
-import { extractText } from "unpdf";
 
 // Output shape Gemini must fill in from resume text
 interface ParsedResume {
@@ -79,6 +78,7 @@ export const ingestResumePdfs = createServerFn({ method: "POST" })
         const uint8Array = new Uint8Array(buffer);
         
         // Extract text using pure-JS unpdf (safe for bundlers/Vercel)
+        const { extractText } = await import("unpdf");
         const pdfData = await extractText(uint8Array, { mergePages: true });
         const text = pdfData.text;
 

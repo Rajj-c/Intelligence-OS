@@ -16,11 +16,17 @@ import {
   LogOut,
   Loader2,
   Menu,
+  Trash2,
+  BellOff,
+  Shield,
+  Info,
 } from "lucide-react";
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -87,11 +93,97 @@ function SidebarContent({ onClose }: SidebarContentProps) {
   );
 }
 
+interface NotificationItem {
+  id: string;
+  title: string;
+  description: string;
+  time: string;
+  unread: boolean;
+  type: 'match' | 'system' | 'security' | 'database';
+}
+
 export default function AppShell() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([
+    {
+      id: "1",
+      title: "High-Precision Match Found",
+      description: "Sarah Jenkins scored 96% for Backend Architect role matching 8/10 core skills.",
+      time: "10m ago",
+      unread: true,
+      type: "match",
+    },
+    {
+      id: "2",
+      title: "Resume Ingestion Complete",
+      description: "Ingested and parsed 12 candidate profiles. Experience matrices updated.",
+      time: "1h ago",
+      unread: true,
+      type: "database",
+    },
+    {
+      id: "3",
+      title: "Tenant context secured",
+      description: "Successfully validated JWT session and active organization Row-Level Security policies.",
+      time: "2h ago",
+      unread: false,
+      type: "security",
+    },
+    {
+      id: "4",
+      title: "AI scoring settings updated",
+      description: "Increased semantic weight to 55% and reduced experience weight deviation.",
+      time: "1d ago",
+      unread: false,
+      type: "system",
+    },
+  ]);
+
+  useEffect(() => {
+    // Add a dynamic notification after 20 seconds to showcase live engine updates
+    const timer = setTimeout(() => {
+      setNotifications(prev => {
+        if (prev.some(n => n.id === "dynamic-1")) return prev;
+        toast.info("New matching intelligence signal received!");
+        return [
+          {
+            id: "dynamic-1",
+            title: "Live Match Engine Alert",
+            description: "New active candidate signup matched your Frontend Developer requisition (91%).",
+            time: "Just now",
+            unread: true,
+            type: "match",
+          },
+          ...prev,
+        ];
+      });
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const unreadCount = notifications.filter((n) => n.unread).length;
+
+  const markAllAsRead = () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  const clearAll = () => {
+    setNotifications([]);
+  };
+
+  const toggleRead = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: !n.unread } : n))
+    );
+  };
+
+  const deleteNotification = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
 
   useEffect(() => {
     const checkUser = async () => {
@@ -169,10 +261,101 @@ export default function AppShell() {
               <kbd className="hidden sm:inline-block font-mono text-[10px] px-1.5 py-0.5 rounded bg-surface-2 border border-border/60">⌘K</kbd>
             </div>
           </div>
-          <button className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-foreground relative shrink-0">
-            <Bell size={16} />
-            <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-destructive" />
-          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="w-9 h-9 rounded-lg border border-border/60 bg-surface/60 grid place-items-center text-muted-foreground hover:text-foreground relative shrink-0 cursor-pointer">
+                <Bell size={16} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                )}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 sm:w-96 p-0 bg-surface border border-border/60 shadow-2xl rounded-xl z-50 overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-border/60 bg-surface-2/40">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-sm text-foreground">Notifications</span>
+                  {unreadCount > 0 && (
+                    <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
+                      {unreadCount} new
+                    </span>
+                  )}
+                </div>
+                {notifications.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={markAllAsRead}
+                      className="text-[11px] text-primary hover:underline cursor-pointer bg-transparent border-none outline-none font-medium"
+                    >
+                      Mark all as read
+                    </button>
+                    <button 
+                      onClick={clearAll}
+                      className="text-[11px] text-muted-foreground hover:text-destructive cursor-pointer bg-transparent border-none outline-none font-medium animate-fade-in"
+                      title="Clear all"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="max-h-80 overflow-y-auto divide-y divide-border/40">
+                {notifications.length === 0 ? (
+                  <div className="py-12 flex flex-col items-center justify-center text-center px-4">
+                    <div className="w-10 h-10 rounded-full bg-surface-2 border border-border/60 flex items-center justify-center text-muted-foreground/60 mb-3">
+                      <BellOff size={18} />
+                    </div>
+                    <p className="text-xs font-semibold text-foreground mb-0.5">All caught up!</p>
+                    <p className="text-[10px] text-muted-foreground max-w-[200px]">You have no new recruitment alerts or matching signals.</p>
+                  </div>
+                ) : (
+                  notifications.map((n) => {
+                    let Icon = Info;
+                    let iconColor = "text-amber-500 bg-amber-500/10 border-amber-500/20";
+                    
+                    if (n.type === 'match') {
+                      Icon = Sparkles;
+                      iconColor = "text-primary bg-primary/10 border-primary/20";
+                    } else if (n.type === 'security') {
+                      Icon = Shield;
+                      iconColor = "text-cyan bg-cyan/10 border-cyan/20";
+                    } else if (n.type === 'database') {
+                      Icon = Database;
+                      iconColor = "text-purple-400 bg-purple-400/10 border-purple-400/20";
+                    }
+                    
+                    return (
+                      <div 
+                        key={n.id}
+                        onClick={() => toggleRead(n.id)}
+                        className={`p-3.5 flex items-start gap-3 hover:bg-surface-2/30 cursor-pointer transition-colors relative group ${n.unread ? 'bg-primary/5' : ''}`}
+                      >
+                        {n.unread && (
+                          <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        )}
+                        <div className={`w-8 h-8 rounded-lg border flex items-center justify-center shrink-0 ${iconColor}`}>
+                          <Icon size={14} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className={`text-xs font-medium truncate ${n.unread ? 'text-foreground' : 'text-muted-foreground'}`}>{n.title}</p>
+                            <span className="text-[10px] text-muted-foreground shrink-0">{n.time}</span>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed break-words">{n.description}</p>
+                        </div>
+                        <button
+                          onClick={(e) => deleteNotification(n.id, e)}
+                          className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-surface-2 transition-all shrink-0 cursor-pointer self-center"
+                          title="Dismiss"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary to-cyan grid place-items-center text-[11px] font-semibold text-white shrink-0">
             {userInitials}
           </div>

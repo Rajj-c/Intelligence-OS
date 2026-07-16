@@ -15,4 +15,7 @@ export default defineConfig({
     react(),
     nitro(),
   ],
+  optimizeDeps: {
+    exclude: ["unpdf", "pdf-parse"],
+  },
 });
