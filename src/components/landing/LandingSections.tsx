@@ -207,8 +207,8 @@ export function CTASection() {
             <a href="/dashboard" className="px-8 py-3 rounded-full bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-[var(--shadow-glow)]">
               Start Recruiting
             </a>
-            <a href="/login" className="px-8 py-3 rounded-full border border-border bg-surface/60 text-sm font-medium hover:bg-surface transition-colors">
-              Request Demo
+            <a href="/dashboard" className="px-8 py-3 rounded-full border border-border bg-surface/60 text-sm font-medium hover:bg-surface transition-colors">
+              Explore Workspace
             </a>
           </div>
         </div>

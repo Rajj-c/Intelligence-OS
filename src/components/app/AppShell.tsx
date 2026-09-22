@@ -187,31 +187,48 @@ export default function AppShell() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate({ to: "/login" });
-      } else {
-        setUser(session.user);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUser(session.user);
+        } else {
+          setUser({
+            id: "00000000-0000-0000-0000-000000000000",
+            email: "guest@talentos.com",
+            user_metadata: { full_name: "Guest Explorer" },
+          } as any);
+        }
+      } catch {
+        setUser({
+          id: "00000000-0000-0000-0000-000000000000",
+          email: "guest@talentos.com",
+        } as any);
+      } finally {
         setLoading(false);
       }
     };
     checkUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        navigate({ to: "/login" });
-      } else {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
         setUser(session.user);
-        setLoading(false);
+      } else {
+        setUser({
+          id: "00000000-0000-0000-0000-000000000000",
+          email: "guest@talentos.com",
+        } as any);
       }
+      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate({ to: "/login" });
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    navigate({ to: "/" });
   };
 
   if (loading) {

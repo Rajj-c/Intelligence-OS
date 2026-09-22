@@ -39,21 +39,16 @@ function LoginPage() {
   const [loadingGuest, setLoadingGuest] = useState(false);
   const [errorText, setErrorText] = useState("");
 
-  // Redirect if already logged in or if landing from password reset link
+  // Redirect directly to dashboard without auth gating
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        // If they landed with ?reset=true in the URL, redirect to password configuration
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("reset") === "true") {
-          setMode("signup");
-          setStep("password_setup");
-          toast.info("Please set a new password to secure your account.");
-        } else {
-          navigate({ to: "/dashboard" });
-        }
-      }
-    });
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reset") === "true") {
+      setMode("signup");
+      setStep("password_setup");
+      toast.info("Please set a new password to secure your account.");
+    } else {
+      navigate({ to: "/dashboard" });
+    }
   }, [navigate]);
 
   // Pre-fill email and auth mode from URL search parameters if available
@@ -405,6 +400,13 @@ function LoginPage() {
                   )}
 
                   <div className="flex flex-col gap-4 py-4">
+                    <Link
+                      to="/dashboard"
+                      className="neu-button w-full py-4 text-lg text-emerald-600 font-semibold"
+                    >
+                      <Sparkles size={18} /> Enter Workspace Directly
+                    </Link>
+
                     <button
                       type="button"
                       onClick={() => setMode("signup")}

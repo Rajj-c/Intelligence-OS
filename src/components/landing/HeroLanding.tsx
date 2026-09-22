@@ -17,16 +17,7 @@ export default function HeroLanding() {
 
   const handleStartSignUp = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      setShowPopup(true);
-      return;
-    }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-    navigate({ to: `/login?email=${encodeURIComponent(email)}&mode=signup` as any });
+    navigate({ to: "/dashboard" });
   };
 
   useEffect(() => {
@@ -123,13 +114,13 @@ export default function HeroLanding() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/login" className="text-white text-sm font-medium hover:text-white/80 transition-colors">Sign Up</Link>
-            <button
-              onClick={() => setShowPopup(true)}
+            <Link to="/dashboard" className="text-white text-sm font-medium hover:text-white/80 transition-colors">Enter Workspace</Link>
+            <Link
+              to="/dashboard"
               className="liquid-glass rounded-full px-6 py-2 text-white text-sm font-medium hover:bg-white/5 transition-all cursor-pointer"
             >
               Launch App
-            </button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -172,12 +163,12 @@ export default function HeroLanding() {
             candidate ranking — trusted by recruiting teams at Fortune 500 companies.
           </p>
           <div className="flex justify-center pt-2">
-            <button
-              onClick={() => setShowPopup(true)}
+            <Link
+              to="/dashboard"
               className="liquid-glass rounded-full px-8 py-3 text-white text-sm font-medium hover:bg-white/5 transition-colors cursor-pointer"
             >
               Explore the Platform →
-            </button>
+            </Link>
           </div>
         </div>
       </div>
